@@ -22,6 +22,9 @@ public class TrackService {
     @Autowired
     private TrackPointRepository trackPointRepository;
     
+    @Autowired
+    private TrackOptimizationService optimizationService;
+    
     /**
      * 获取所有轨迹列表
      */
@@ -47,17 +50,56 @@ public class TrackService {
     }
     
     /**
-     * 根据轨迹ID获取轨迹点
+     * 根据轨迹ID获取轨迹点（优化版本）
      */
     public List<TrackPointDto> getTrackPoints(String trackId) {
+        List<TrackPoint> points = trackPointRepository.findByAccountIdOrderByTimestampAsc(trackId);
+        
+        // 应用轨迹优化
+        List<TrackPoint> optimizedPoints = optimizationService.optimizeTrackPoints(points);
+        
+        // 打印优化统计信息
+        System.out.println("轨迹 " + trackId + " - " + 
+                          optimizationService.getOptimizationStats(points, optimizedPoints));
+        
+        return optimizedPoints.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取所有轨迹点（优化版本）
+     */
+    public List<TrackPointDto> getAllTrackPoints() {
+        List<TrackPoint> points = trackPointRepository.findAll();
+        
+        // 按账号分组并分别优化
+        List<TrackPoint> allOptimizedPoints = new ArrayList<>();
+        List<String> accountIds = trackPointRepository.findDistinctAccountIds();
+        
+        for (String accountId : accountIds) {
+            List<TrackPoint> accountPoints = trackPointRepository.findByAccountIdOrderByTimestampAsc(accountId);
+            List<TrackPoint> optimizedPoints = optimizationService.optimizeTrackPoints(accountPoints);
+            allOptimizedPoints.addAll(optimizedPoints);
+            
+            // 打印优化统计信息
+            System.out.println("账号 " + accountId + " - " + 
+                              optimizationService.getOptimizationStats(accountPoints, optimizedPoints));
+        }
+        
+        return allOptimizedPoints.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取原始轨迹点（未优化）
+     */
+    public List<TrackPointDto> getRawTrackPoints(String trackId) {
         List<TrackPoint> points = trackPointRepository.findByAccountIdOrderByTimestampAsc(trackId);
         return points.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
     /**
-     * 获取所有轨迹点
+     * 获取所有原始轨迹点（未优化）
      */
-    public List<TrackPointDto> getAllTrackPoints() {
+    public List<TrackPointDto> getAllRawTrackPoints() {
         List<TrackPoint> points = trackPointRepository.findAll();
         return points.stream().map(this::convertToDto).collect(Collectors.toList());
     }

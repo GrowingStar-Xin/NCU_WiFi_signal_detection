@@ -112,6 +112,48 @@ public class TrackController {
     }
     
     /**
+     * 获取原始轨迹点（未优化）
+     */
+    @GetMapping("/raw/all")
+    public ResponseEntity<Map<String, Object>> getAllRawTrackPoints() {
+        try {
+            List<TrackPointDto> points = trackService.getAllRawTrackPoints();
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 200);
+            response.put("message", "获取原始轨迹点成功");
+            response.put("data", points);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 500);
+            response.put("message", "获取原始轨迹点失败: " + e.getMessage());
+            response.put("data", null);
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+    
+    /**
+     * 获取指定轨迹的原始轨迹点（未优化）
+     */
+    @GetMapping("/{trackId}/raw/points")
+    public ResponseEntity<Map<String, Object>> getRawTrackPoints(@PathVariable String trackId) {
+        try {
+            List<TrackPointDto> points = trackService.getRawTrackPoints(trackId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 200);
+            response.put("message", "获取原始轨迹点成功");
+            response.put("data", points);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 500);
+            response.put("message", "获取原始轨迹点失败: " + e.getMessage());
+            response.put("data", null);
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
      * 健康检查接口
      */
     @GetMapping("/health")

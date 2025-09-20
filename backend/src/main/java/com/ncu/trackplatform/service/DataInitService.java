@@ -24,7 +24,6 @@ public class DataInitService implements CommandLineRunner {
     @Autowired
     private TrackPointRepository trackPointRepository;
     
-    @Override
     public void run(String... args) throws Exception {
         // 检查数据库是否已有数据
         if (trackPointRepository.count() > 0) {
