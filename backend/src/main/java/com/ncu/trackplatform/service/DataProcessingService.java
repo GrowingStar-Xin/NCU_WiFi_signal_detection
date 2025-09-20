@@ -17,8 +17,8 @@ import java.util.List;
 @Service
 public class DataProcessingService {
     
-    @Autowired
-    private TrackPointRepository trackPointRepository;
+    // @Autowired
+    // private TrackPointRepository trackPointRepository;
     
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
@@ -27,14 +27,16 @@ public class DataProcessingService {
      */
     @Transactional
     public void clearAllData() {
-        trackPointRepository.deleteAll();
+        // trackPointRepository.deleteAll();
+        System.out.println("清空数据功能暂时不可用");
     }
     
     /**
      * 获取数据统计信息
      */
     public String getDataStatistics() {
-        long trackPointCount = trackPointRepository.count();
-        return String.format("数据统计: 轨迹点记录 %d 条", trackPointCount);
+        // long trackPointCount = trackPointRepository.count();
+        // return String.format("数据统计: 轨迹点记录 %d 条", trackPointCount);
+        return "数据统计功能暂时不可用";
     }
 }

@@ -3,6 +3,8 @@ package com.ncu.trackplatform.controller;
 import com.ncu.trackplatform.dto.TrackDataDto;
 import com.ncu.trackplatform.dto.TrackPointDto;
 import com.ncu.trackplatform.service.TrackService;
+import com.ncu.trackplatform.service.WiFiLogParsingService;
+import com.ncu.trackplatform.service.BehaviorBasedOptimizationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,12 @@ public class TrackController {
     
     @Autowired
     private TrackService trackService;
+    
+    @Autowired
+    private WiFiLogParsingService wifiLogParsingService;
+    
+    @Autowired
+    private BehaviorBasedOptimizationService behaviorBasedOptimizationService;
     
     /**
      * 获取所有轨迹列表
@@ -106,6 +114,35 @@ public class TrackController {
             Map<String, Object> response = new HashMap<>();
             response.put("code", 500);
             response.put("message", "文件上传失败: " + e.getMessage());
+            response.put("data", null);
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+    
+    /**
+     * 上传WiFi日志数据（基于终端行为优化）
+     */
+    @PostMapping("/upload-wifi")
+    public ResponseEntity<Map<String, Object>> uploadWiFiLogData(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("code", 400);
+                response.put("message", "文件不能为空");
+                response.put("data", null);
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            String result = behaviorBasedOptimizationService.processWiFiLogFile(file);
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 200);
+            response.put("message", result);
+            response.put("data", null);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 500);
+            response.put("message", "WiFi日志上传失败: " + e.getMessage());
             response.put("data", null);
             return ResponseEntity.status(500).body(response);
         }

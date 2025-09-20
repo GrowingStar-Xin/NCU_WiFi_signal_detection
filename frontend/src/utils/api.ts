@@ -32,13 +32,35 @@ api.interceptors.response.use(
 )
 
 // 获取轨迹列表
-export const getTrackList = (): Promise<ApiResponse<TrackData[]>> => {
+export const getTrackList = () => {
   return api.get('/tracks')
 }
 
-// 获取指定轨迹数据
-export const loadTrackData = (trackId: string): Promise<ApiResponse<TrackPoint[]>> => {
+// 加载轨迹数据
+export const loadTrackData = (trackId: string) => {
   return api.get(`/tracks/${trackId}/points`)
+}
+
+// 用户信息相关API
+export const searchUsers = (query: string) => {
+  return api.get(`/users/search?q=${encodeURIComponent(query)}`)
+}
+
+export const getUserInfo = (userId: string) => {
+  return api.get(`/users/${userId}`)
+}
+
+export const getUserTracks = (userId: string) => {
+  return api.get(`/users/${userId}/tracks`)
+}
+
+// 校区信息相关API
+export const getCampusList = () => {
+  return api.get('/campuses')
+}
+
+export const getCampusInfo = (campusId: string) => {
+  return api.get(`/campuses/${campusId}`)
 }
 
 // 获取所有轨迹数据

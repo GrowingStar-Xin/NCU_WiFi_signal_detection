@@ -4,32 +4,32 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "track_points")
+@Table(name = "TRACK_POINTS")
 public class TrackPoint {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "account_id", nullable = false)
+    @Column(name = "ACCOUNT_ID", nullable = false)
     private String accountId;
     
-    @Column(name = "latitude", nullable = false)
+    @Column(name = "LATITUDE", nullable = false)
     private Double latitude;
     
-    @Column(name = "longitude", nullable = false)
+    @Column(name = "LONGITUDE", nullable = false)
     private Double longitude;
     
-    @Column(name = "timestamp", nullable = false)
+    @Column(name = "TIMESTAMP", nullable = false)
     private LocalDateTime timestamp;
     
-    @Column(name = "accuracy")
+    @Column(name = "ACCURACY")
     private Double accuracy;
     
-    @Column(name = "speed")
+    @Column(name = "SPEED")
     private Double speed;
     
-    @Column(name = "track_id")
+    @Column(name = "TRACK_ID")
     private String trackId;
     
     // 默认构造函数
