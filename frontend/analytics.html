@@ -1,0 +1,376 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi 信号深度分析平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            background-image: 
+                radial-gradient(at 40% 20%, hsla(218,76%,94%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, hsla(189,100%,96%,1) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(340,100%,96%,1) 0px, transparent 50%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-slate-700">
+    <!-- Header -->
+    <header class="glass-panel m-4 mb-0 p-4 flex justify-between items-center shrink-0 z-10">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                    WiFi 信号深度分析平台
+                </h1>
+                <p class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                    <i class="far fa-file-alt"></i> 
+                    <span id="current-file">正在分析: track_1762512900_1_dec.csv</span>
+                </p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <div class="text-right mr-4">
+                <div class="text-xs text-slate-400">数据覆盖时间</div>
+                <div class="font-mono font-bold text-slate-700" id="time-range">Loading...</div>
+            </div>
+            <button class="glass-panel px-4 py-2 hover:bg-white transition-colors text-sm font-medium text-blue-600" onclick="location.reload()">
+                <i class="fas fa-sync-alt mr-2"></i>刷新数据
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 p-4 grid grid-cols-12 grid-rows-12 gap-4 overflow-hidden">
+        
+        <!-- 1. Signal Health (Donut Chart) -->
+        <div class="col-span-3 row-span-5 glass-panel flex flex-col p-4">
+            <h3 class="font-bold text-lg mb-2 flex items-center">
+                <span class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center mr-2">
+                    <i class="fas fa-heartbeat"></i>
+                </span>
+                信号健康度分布
+            </h3>
+            <div class="flex-1 relative" id="health-chart"></div>
+            <div class="grid grid-cols-2 gap-2 text-xs mt-2">
+                <div class="bg-green-50 p-2 rounded text-center">
+                    <div class="text-green-600 font-bold text-lg" id="stat-good">0%</div>
+                    <div class="text-slate-400">极好/良好</div>
+                </div>
+                <div class="bg-red-50 p-2 rounded text-center">
+                    <div class="text-red-600 font-bold text-lg" id="stat-poor">0%</div>
+                    <div class="text-slate-400">较差/无信号</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. AP Load Ranking (Bar Chart) -->
+        <div class="col-span-5 row-span-5 glass-panel flex flex-col p-4">
+            <h3 class="font-bold text-lg mb-2 flex items-center">
+                <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mr-2">
+                    <i class="fas fa-broadcast-tower"></i>
+                </span>
+                热点 AP 负载排行 (Top 10)
+            </h3>
+            <div class="flex-1" id="ap-chart"></div>
+        </div>
+
+        <!-- 3. Anomaly Monitor (List) -->
+        <div class="col-span-4 row-span-5 glass-panel flex flex-col p-4">
+            <h3 class="font-bold text-lg mb-2 flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center mr-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </span>
+                    异常行为监控
+                </div>
+                <span class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold" id="anomaly-count">0 异常</span>
+            </h3>
+            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2" id="anomaly-list">
+                <!-- Anomalies injected here -->
+                <div class="text-center text-slate-400 mt-10">暂无异常记录</div>
+            </div>
+        </div>
+
+        <!-- 4. Time Series Trend (Area Chart) -->
+        <div class="col-span-12 row-span-7 glass-panel flex flex-col p-4">
+            <h3 class="font-bold text-lg mb-2 flex items-center">
+                <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mr-2">
+                    <i class="fas fa-chart-area"></i>
+                </span>
+                时域流量与行为趋势
+            </h3>
+            <div class="flex-1" id="trend-chart"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Data Processing Logic ---
+        
+        const csvUrl = '/data/track_files/track_1762512900_1_dec.csv';
+
+        // Signal Quality Thresholds
+        const QUALITY = {
+            EXCELLENT: -50,
+            GOOD: -70,
+            POOR: -80
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndParseData();
+        });
+
+        async function fetchAndParseData() {
+            try {
+                const response = await fetch(csvUrl);
+                const text = await response.text();
+                
+                Papa.parse(text, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        processData(results.data);
+                    }
+                });
+            } catch (e) {
+                console.error('Error loading data:', e);
+            }
+        }
+
+        function processData(data) {
+            // 1. Signal Health Data
+            let healthStats = { excellent: 0, good: 0, fair: 0, poor: 0 };
+            
+            // 2. AP Stats
+            let apStats = {};
+            
+            // 3. Time Series Data
+            let timeSeries = {}; // Key: timestamp (minute), Value: { count: 0, signalSum: 0, signalCount: 0 }
+            
+            // 4. Anomalies
+            let anomalies = [];
+
+            // Date range helper
+            let minTime = null, maxTime = null;
+
+            data.forEach(row => {
+                // Parse Signal
+                let signal = -100; // Default to poor
+                if (row['信号强度']) {
+                    const match = row['信号强度'].match(/(-?\d+)/);
+                    if (match) signal = parseInt(match[1]);
+                }
+
+                // Categorize Signal
+                if (signal > QUALITY.EXCELLENT) healthStats.excellent++;
+                else if (signal > QUALITY.GOOD) healthStats.good++;
+                else if (signal > QUALITY.POOR) healthStats.fair++;
+                else healthStats.poor++;
+
+                // Parse AP
+                const apInfo = row['轨迹详细信息'] || '';
+                // Extract AP Name (simplified regex)
+                const apMatch = apInfo.match(/AP\s+([^\s\(]+)/); 
+                if (apMatch) {
+                    const apName = apMatch[1];
+                    apStats[apName] = (apStats[apName] || 0) + 1;
+                }
+
+                // Parse Time
+                if (row['时间']) {
+                    const date = new Date(row['时间']);
+                    if (!isNaN(date)) {
+                        if (!minTime || date < minTime) minTime = date;
+                        if (!maxTime || date > maxTime) maxTime = date;
+
+                        // Round to nearest minute for trend chart
+                        date.setSeconds(0, 0);
+                        const timeKey = date.getTime();
+                        
+                        if (!timeSeries[timeKey]) timeSeries[timeKey] = { count: 0, signalSum: 0, signalCount: 0 };
+                        timeSeries[timeKey].count++;
+                        if (signal > -100) {
+                            timeSeries[timeKey].signalSum += signal;
+                            timeSeries[timeKey].signalCount++;
+                        }
+                    }
+                }
+
+                // Detect Anomalies
+                const behavior = row['终端行为'] || '';
+                const log = row['日志原文'] || '';
+                if (behavior.includes('下线') || log.includes('Reason') || log.includes('failed') || log.includes('Low RSSI')) {
+                    anomalies.push({
+                        time: row['时间']?.split(' ')[3] || 'Unknown', // Extract HH:mm:ss
+                        type: behavior.includes('下线') ? '下线' : '异常',
+                        desc: log.includes('Low RSSI') ? '信号过弱 (-89dBm)' : (log.match(/Reason[:\s]+(\d+|[a-zA-Z\s]+)/)?.[0] || '未知原因'),
+                        color: log.includes('Low RSSI') ? 'text-orange-500' : 'text-red-500'
+                    });
+                }
+            });
+
+            // Render UI
+            renderTimeRange(minTime, maxTime);
+            renderHealthChart(healthStats, data.length);
+            renderApChart(apStats);
+            renderTrendChart(timeSeries);
+            renderAnomalies(anomalies);
+        }
+
+        function renderTimeRange(min, max) {
+            if (min && max) {
+                const fmt = d => d.toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'});
+                document.getElementById('time-range').innerText = `${fmt(min)} - ${fmt(max)}`;
+            }
+        }
+
+        function renderHealthChart(stats, total) {
+            const chart = echarts.init(document.getElementById('health-chart'));
+            const option = {
+                tooltip: { trigger: 'item' },
+                legend: { top: '5%', left: 'center' },
+                color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                series: [
+                    {
+                        name: '信号质量',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                        label: { show: false },
+                        labelLine: { show: false },
+                        data: [
+                            { value: stats.excellent, name: '极好 (>-50)' },
+                            { value: stats.good, name: '良好 (-50~-70)' },
+                            { value: stats.fair, name: '一般 (-70~-80)' },
+                            { value: stats.poor, name: '较差 (<-80)' }
+                        ]
+                    }
+                ]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', () => chart.resize());
+
+            // Update summary numbers
+            const goodPct = Math.round(((stats.excellent + stats.good) / total) * 100);
+            const poorPct = Math.round(((stats.poor) / total) * 100);
+            document.getElementById('stat-good').innerText = goodPct + '%';
+            document.getElementById('stat-poor').innerText = poorPct + '%';
+        }
+
+        function renderApChart(apStats) {
+            const sortedAps = Object.entries(apStats)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10); // Top 10
+
+            const chart = echarts.init(document.getElementById('ap-chart'));
+            const option = {
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'value', boundaryGap: [0, 0.01] },
+                yAxis: { 
+                    type: 'category', 
+                    data: sortedAps.map(item => item[0].replace('前湖南-', '').replace('无线/', '')), // Simplify names
+                    axisLabel: { interval: 0, width: 100, overflow: 'truncate' }
+                },
+                series: [
+                    {
+                        name: '活跃频次',
+                        type: 'bar',
+                        data: sortedAps.map(item => item[1]),
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                { offset: 0, color: '#60a5fa' },
+                                { offset: 1, color: '#2563eb' }
+                            ]),
+                            borderRadius: [0, 4, 4, 0]
+                        }
+                    }
+                ]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', () => chart.resize());
+        }
+
+        function renderTrendChart(timeSeries) {
+            const sortedTimes = Object.keys(timeSeries).sort();
+            const xData = sortedTimes.map(t => new Date(parseInt(t)).toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'}));
+            const countData = sortedTimes.map(t => timeSeries[t].count);
+            const signalData = sortedTimes.map(t => 
+                timeSeries[t].signalCount > 0 ? Math.round(timeSeries[t].signalSum / timeSeries[t].signalCount) : null
+            );
+
+            const chart = echarts.init(document.getElementById('trend-chart'));
+            const option = {
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['活跃度 (日志量)', '平均信号 (dBm)'] },
+                grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+                xAxis: { 
+                    type: 'category', 
+                    boundaryGap: false, 
+                    data: xData 
+                },
+                yAxis: [
+                    { type: 'value', name: '活跃度' },
+                    { type: 'value', name: '信号强度', min: -100, max: -30 }
+                ],
+                dataZoom: [{ type: 'inside', start: 0, end: 100 }, { start: 0, end: 100 }],
+                series: [
+                    {
+                        name: '活跃度 (日志量)',
+                        type: 'line',
+                        smooth: true,
+                        areaStyle: { opacity: 0.2, color: '#8b5cf6' },
+                        lineStyle: { color: '#8b5cf6' },
+                        data: countData
+                    },
+                    {
+                        name: '平均信号 (dBm)',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        smooth: true,
+                        lineStyle: { type: 'dashed', color: '#10b981' },
+                        data: signalData
+                    }
+                ]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', () => chart.resize());
+        }
+
+        function renderAnomalies(list) {
+            const container = document.getElementById('anomaly-list');
+            document.getElementById('anomaly-count').innerText = `${list.length} 异常`;
+            
+            if (list.length === 0) return;
+
+            container.innerHTML = list.map(item => `
+                <div class="bg-white/50 p-2 rounded border border-slate-100 flex items-center justify-between text-xs hover:bg-white transition-colors">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-slate-400">${item.time}</span>
+                        <span class="font-bold ${item.color}">${item.type}</span>
+                    </div>
+                    <div class="text-slate-600 truncate max-w-[180px]" title="${item.desc}">${item.desc}</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地图数据查询</title>
+    <script src="./js/bundle.min.js"></script>
+    <link rel="stylesheet" href="./js/bundle.css">
+    <script type="text/javascript" src="https://wisec.you07.com/cmgisdoc/demo/js/echarts-all-3.js"> </script>
+
+    <script type="text/javascript" src="https://wisec.you07.com/cmgisdoc/demo/js/EchartsLayer.js"> </script>
+    <!-- <script src="./js/proj4.js"></script> -->
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+</head>
+<style>
+    #select {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        z-index: 999;
+    }
+
+    .fun-btn {
+        position: absolute;
+        bottom: 5%;
+        right: 5%;
+    }
+</style>
+
+<body>
+
+    <div id="VMap" style="width: 100%;height: 100vh;"></div>
+
+
+    <!-- <button onclick="flyto()" style="position: fixed;top: 0;">大楼id</button> -->
+
+
+
+
+</body>
+<script type="module">
+      import initOption from "./js/echarts-layer.js";
+    var VMap = new creeper.VectorMap('VMap', 1, 'https://gis.ncu.edu.cn/cmgis-server/')
+    creeper.CreeperConfig.token = "bG91ZG9uZzpjMDRjY2NlN2JkMzJjZDFlZjMxZWQxZjYyYjQ5MjBkMw==";
+
+    VMap.on("load", () => {
+
+
+
+         //初始化echarts
+                var echart=new window.EchartsLayer(VMap)
+                var chart = echart.chart;
+                //初始化数据
+                var geoCoordMap = {
+                    '图书馆': [115.90332024555664, 28.68728094482917],
+                    '灵奇图书馆': [115.90446830615127, 28.687606234278377],
+                    '二号教学楼': [115.90346403572607, 28.686767034763164],
+                    '一号教学楼': [115.900796967487, 28.686999800881296],
+                };
+                var migrate = [
+                    [{
+                        name: '一号教学楼'
+                    }, {
+                        name: '图书馆',
+                        value: 1
+                    }],
+                    [{
+                        name: '一号教学楼'
+                    }, {
+                        name: '灵奇图书馆',
+                        value: 1
+                    }],
+                    [{
+                        name: '一号教学楼'
+                    }, {
+                        name: '二号教学楼',
+                        value: 1
+                    }],
+                ];
+                //开始绘制
+                chart.setOption(
+                    initOption(geoCoordMap,migrate)
+                );   
+
+
+        VMap.on("click", (e) => {
+            var features = VMap.queryRenderedFeatures(e.point);
+
+            console.log('features', e);
+        });
+
+
+        VMap.setPitch(0)
+    })
+
+
+
+
+
+</script>
+
+
+
+</html>

@@ -1,8 +1,13 @@
-<template>
+﻿<template>
   <div id="app">
     <el-container>
       <el-header>
-        <h1>南昌大学前湖校区轨迹平台</h1>
+        <div class="header-wrap">
+          <h1>南昌大学前湖校区轨迹平台</h1>
+          <a href="/data.html" target="_blank">
+            <el-button type="primary">打开数据监控页</el-button>
+          </a>
+        </div>
       </el-header>
       <el-main>
         <router-view />
@@ -26,7 +31,13 @@
   color: white;
   display: flex;
   align-items: center;
-  justify-content: center;
+}
+
+.header-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .el-header h1 {

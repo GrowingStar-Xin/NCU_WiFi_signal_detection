@@ -1,0 +1,434 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi 智能监控终端 - 校园网数据中心</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <style>
+        /* Custom Scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f172a',
+                        card: '#1e293b',
+                        accent: '#3b82f6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-slate-200 font-sans antialiased overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="border-b border-slate-700 bg-card/80 backdrop-blur fixed w-full z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-wifi text-accent text-2xl animate-pulse"></i>
+                    <span class="font-bold text-xl tracking-wide">WiFi Monitor <span class="text-xs text-slate-400 font-normal bg-slate-800 px-2 py-0.5 rounded ml-2">v2.1 Pro</span></span>
+                </div>
+                <div class="flex items-center gap-4 text-sm text-slate-400">
+                    <span id="current-time" class="font-mono">Loading...</span>
+                    <div class="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent border border-accent/50 cursor-pointer hover:bg-accent hover:text-white transition">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-10 px-4 max-w-[1600px] mx-auto">
+        
+        <!-- Header Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Stat Card 1 -->
+            <div class="glass-panel p-5 rounded-xl shadow-lg hover:shadow-accent/10 transition duration-300 border-l-4 border-accent">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider">今日活跃终端</p>
+                        <h3 class="text-3xl font-bold mt-1 text-white">1,248</h3>
+                        <p class="text-xs text-emerald-400 mt-2"><i class="fa-solid fa-arrow-trend-up"></i> +12.5% 较昨日</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-accent/10 text-accent">
+                        <i class="fa-solid fa-laptop-code text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stat Card 2 -->
+            <div class="glass-panel p-5 rounded-xl shadow-lg hover:shadow-success/10 transition duration-300 border-l-4 border-success">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider">平均信号强度</p>
+                        <h3 class="text-3xl font-bold mt-1 text-white">-62 <span class="text-sm font-normal text-slate-400">dBm</span></h3>
+                        <p class="text-xs text-slate-400 mt-2">连接质量: <span class="text-success font-bold">优良</span></p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-success/10 text-success">
+                        <i class="fa-solid fa-signal text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stat Card 3 -->
+            <div class="glass-panel p-5 rounded-xl shadow-lg hover:shadow-warning/10 transition duration-300 border-l-4 border-warning">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider">漫游/重连事件</p>
+                        <h3 class="text-3xl font-bold mt-1 text-white">342</h3>
+                        <p class="text-xs text-slate-400 mt-2">高发区域: <span class="text-warning">前湖北-艺术楼</span></p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-warning/10 text-warning">
+                        <i class="fa-solid fa-route text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stat Card 4 -->
+            <div class="glass-panel p-5 rounded-xl shadow-lg hover:shadow-purple-500/10 transition duration-300 border-l-4 border-purple-500">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider">5G 频段占比</p>
+                        <h3 class="text-3xl font-bold mt-1 text-white">76.4%</h3>
+                        <p class="text-xs text-purple-400 mt-2"><i class="fa-solid fa-bolt"></i> 高速通道优先</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-purple-500/10 text-purple-500">
+                        <i class="fa-solid fa-tower-broadcast text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- Main Line Chart (Spans 2 columns) -->
+            <div class="lg:col-span-2 glass-panel p-6 rounded-xl shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-accent"></i> 终端上下线趋势统计
+                    </h2>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 text-xs rounded bg-accent text-white hover:bg-blue-600 transition">1小时</button>
+                        <button class="px-3 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 transition text-slate-300">24小时</button>
+                    </div>
+                </div>
+                <div id="trendChart" style="width: 100%; height: 350px;"></div>
+            </div>
+
+            <!-- Pie Chart -->
+            <div class="glass-panel p-6 rounded-xl shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-purple-400"></i> 频段与SSID 分布
+                    </h2>
+                </div>
+                <div id="pieChart" style="width: 100%; height: 350px;"></div>
+            </div>
+        </div>
+
+        <!-- Secondary Charts & Table -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Bar Chart: Top AP Locations -->
+            <div class="glass-panel p-6 rounded-xl shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-success"></i> 热门 AP 节点 (Top 5)
+                    </h2>
+                </div>
+                <div id="barChart" style="width: 100%; height: 300px;"></div>
+            </div>
+
+            <!-- Recent Logs Table (Spans 2 columns) -->
+            <div class="lg:col-span-2 glass-panel p-6 rounded-xl shadow-lg overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-list-ul text-warning"></i> 实时日志流 (Live Logs)
+                    </h2>
+                    <span class="text-xs text-slate-500 animate-pulse"><i class="fa-solid fa-circle text-green-500 mr-1"></i> Live</span>
+                </div>
+                
+                <div class="overflow-x-auto flex-grow">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-slate-400 border-b border-slate-700 uppercase tracking-wider">
+                                <th class="p-3">时间</th>
+                                <th class="p-3">行为</th>
+                                <th class="p-3">AP 位置</th>
+                                <th class="p-3">SSID/频段</th>
+                                <th class="p-3">IP 地址</th>
+                                <th class="p-3 text-right">信号</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody" class="text-sm text-slate-300 divide-y divide-slate-700/50">
+                            <!-- JS will inject rows here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-6 text-slate-600 text-sm border-t border-slate-800 mt-4">
+        <p>&copy; 2025 校园网网络中心监控系统 | Powered by DataHub</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- 1. Mock Data Generator (Simulating your CSV) ---
+        // Generates data similar to: 
+        // "Wed Sep 17 09:54:36 CST 2025", "上线", "前湖北-艺术楼...", "10.202.55.239", "NCUWLAN", "2.4G", ...
+        
+        const AP_NAMES = [
+            "前湖北-艺术楼-b-2f-02", 
+            "前湖北-材料环境楼-C349B-1", 
+            "前湖软-图书馆-3F-Reading", 
+            "前湖北-教学楼-A-101", 
+            "前湖软-食堂-1F-Main"
+        ];
+        
+        const BEHAVIORS = [
+            { type: "上线 (获取IP地址成功)", color: "text-emerald-400" },
+            { type: "上线 (关联成功)", color: "text-blue-400" },
+            { type: "下线", color: "text-slate-500" },
+            { type: "漫游", color: "text-warning" }
+        ];
+
+        const SSIDS = ["NCUWLAN", "NCU-Guest", "eduroam"];
+        
+        function generateMockData(count) {
+            const data = [];
+            let now = new Date();
+            for (let i = 0; i < count; i++) {
+                const behaviorObj = BEHAVIORS[Math.floor(Math.random() * BEHAVIORS.length)];
+                const band = Math.random() > 0.3 ? "5G" : "2.4G";
+                const signal = -30 - Math.floor(Math.random() * 60); // -30 to -90 dBm
+                
+                // Time adjustment backwards
+                const logTime = new Date(now.getTime() - (i * 1000 * 60 * 2)); // Every 2 mins
+                
+                data.push({
+                    time: logTime.toLocaleTimeString('zh-CN', { hour12: false }),
+                    fullTime: logTime,
+                    behavior: behaviorObj.type,
+                    behaviorColor: behaviorObj.color,
+                    ap: AP_NAMES[Math.floor(Math.random() * AP_NAMES.length)],
+                    ip: behaviorObj.type.includes("上线") ? `10.202.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}` : "-",
+                    ssid: SSIDS[Math.floor(Math.random() * SSIDS.length)],
+                    band: band,
+                    signal: signal
+                });
+            }
+            return data; // Return oldest to newest for charts usually, but we generated new to old
+        }
+
+        const rawData = generateMockData(50); // Generate 50 rows
+        const chartData = [...rawData].reverse(); // Oldest first for line chart
+
+        // --- 2. Initialize Charts ---
+
+        // Chart 1: Trend Line (Events over time)
+        const trendChart = echarts.init(document.getElementById('trendChart'));
+        const trendOption = {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                borderColor: '#475569',
+                textStyle: { color: '#e2e8f0' }
+            },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: chartData.map(d => d.time),
+                axisLine: { lineStyle: { color: '#475569' } },
+                axisLabel: { color: '#94a3b8' }
+            },
+            yAxis: {
+                type: 'value',
+                splitLine: { lineStyle: { color: '#334155', type: 'dashed' } },
+                axisLabel: { color: '#94a3b8' }
+            },
+            series: [
+                {
+                    name: '信号强度 (dBm)',
+                    type: 'line',
+                    smooth: true,
+                    data: chartData.map(d => d.signal),
+                    lineStyle: { color: '#3b82f6', width: 3 },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(59, 130, 246, 0.5)' },
+                            { offset: 1, color: 'rgba(59, 130, 246, 0.0)' }
+                        ])
+                    },
+                    symbol: 'none'
+                }
+            ]
+        };
+        trendChart.setOption(trendOption);
+
+        // Chart 2: Pie Chart (Band Distribution)
+        const pieChart = echarts.init(document.getElementById('pieChart'));
+        
+        let band24 = rawData.filter(d => d.band === '2.4G').length;
+        let band5 = rawData.filter(d => d.band === '5G').length;
+
+        const pieOption = {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'item' },
+            legend: { top: '5%', left: 'center', textStyle: { color: '#cbd5e1' } },
+            series: [
+                {
+                    name: '频段分布',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#1e293b',
+                        borderWidth: 2
+                    },
+                    label: { show: false, position: 'center' },
+                    emphasis: {
+                        label: { show: true, fontSize: 20, fontWeight: 'bold', color: '#fff' }
+                    },
+                    labelLine: { show: false },
+                    data: [
+                        { value: band5, name: '5G 高频', itemStyle: { color: '#a855f7' } },
+                        { value: band24, name: '2.4G 低频', itemStyle: { color: '#f59e0b' } },
+                        { value: 5, name: '未知/其他', itemStyle: { color: '#64748b' } }
+                    ]
+                }
+            ]
+        };
+        pieChart.setOption(pieOption);
+
+        // Chart 3: Bar Chart (Top Locations)
+        const barChart = echarts.init(document.getElementById('barChart'));
+        // Count occurences
+        const apCounts = {};
+        rawData.forEach(d => { apCounts[d.ap] = (apCounts[d.ap] || 0) + 1; });
+        // Sort
+        const sortedAps = Object.entries(apCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+        const barOption = {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'value',
+                axisLine: { show: false },
+                splitLine: { show: false },
+                axisLabel: { show: false }
+            },
+            yAxis: {
+                type: 'category',
+                data: sortedAps.map(item => item[0].split('-')[1] || item[0]), // Simplify name
+                axisLine: { show: false },
+                axisLabel: { color: '#cbd5e1' },
+                axisTick: { show: false }
+            },
+            series: [
+                {
+                    name: '活跃数',
+                    type: 'bar',
+                    data: sortedAps.map(item => item[1]),
+                    barWidth: '60%',
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                            { offset: 0, color: '#10b981' },
+                            { offset: 1, color: '#059669' }
+                        ]),
+                        borderRadius: [0, 4, 4, 0]
+                    },
+                    label: { show: true, position: 'right', color: '#fff' }
+                }
+            ]
+        };
+        barChart.setOption(barOption);
+
+        // --- 3. Populate Table ---
+        const tableBody = document.getElementById('logTableBody');
+        
+        // Take top 8 recent logs
+        rawData.slice(0, 8).forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-700/30 transition border-b border-slate-800 last:border-0";
+            
+            // Signal strength badge logic
+            let signalClass = "bg-red-500/20 text-red-400";
+            if(row.signal > -50) signalClass = "bg-green-500/20 text-green-400";
+            else if(row.signal > -70) signalClass = "bg-yellow-500/20 text-yellow-400";
+
+            tr.innerHTML = `
+                <td class="p-3 whitespace-nowrap font-mono text-slate-400">${row.time}</td>
+                <td class="p-3 font-medium ${row.behaviorColor}">${row.behavior}</td>
+                <td class="p-3 text-slate-300 truncate max-w-[150px]" title="${row.ap}">${row.ap}</td>
+                <td class="p-3"><span class="bg-slate-700 text-xs px-2 py-1 rounded text-slate-300">${row.ssid}</span> <span class="text-xs text-slate-500 ml-1">${row.band}</span></td>
+                <td class="p-3 font-mono text-xs text-slate-400">${row.ip}</td>
+                <td class="p-3 text-right">
+                    <span class="${signalClass} text-xs px-2 py-1 rounded font-bold">${row.signal} dBm</span>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // --- 4. Utilities ---
+        
+        // Update clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleString('zh-CN', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }, 1000);
+
+        // Resize charts on window resize
+        window.addEventListener('resize', () => {
+            trendChart.resize();
+            pieChart.resize();
+            barChart.resize();
+        });
+
+    </script>
+</body>
+</html>
